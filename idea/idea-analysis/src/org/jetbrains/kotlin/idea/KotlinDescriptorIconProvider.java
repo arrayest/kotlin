@@ -25,7 +25,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor;
+import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtModifierListOwner;
 
 import javax.swing.*;
 
@@ -42,7 +44,7 @@ public final class KotlinDescriptorIconProvider {
             return declaration.getIcon(flags);
         }
 
-        Icon result = getBaseIcon(descriptor);
+        Icon result = getBaseIcon(descriptor, declaration);
         if ((flags & Iconable.ICON_FLAG_VISIBILITY) > 0) {
             RowIcon rowIcon = new RowIcon(2);
             rowIcon.setIcon(result, 0);
@@ -77,7 +79,22 @@ public final class KotlinDescriptorIconProvider {
         return null;
     }
 
-    private static Icon getBaseIcon(@NotNull DeclarationDescriptor descriptor) {
+    private static boolean isAbstract(
+            @Nullable PsiElement declaration
+    ) {
+        if (declaration instanceof KtModifierListOwner) {
+            KtModifierListOwner modifierListOwner = (KtModifierListOwner) declaration;
+            if (modifierListOwner.hasModifier(KtTokens.ABSTRACT_KEYWORD)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Icon getBaseIcon(
+            @NotNull DeclarationDescriptor descriptor,
+            @Nullable PsiElement declaration
+    ) {
         if (descriptor instanceof PackageFragmentDescriptor || descriptor instanceof PackageViewDescriptor) {
             return PlatformIcons.PACKAGE_ICON;
         }
@@ -112,7 +129,7 @@ public final class KotlinDescriptorIconProvider {
                 case OBJECT:
                     return KotlinIcons.OBJECT;
                 case CLASS:
-                    return Modality.ABSTRACT == classDescriptor.getModality() ?
+                    return isAbstract(declaration) ?
                            KotlinIcons.ABSTRACT_CLASS :
                            KotlinIcons.CLASS;
                 default:
